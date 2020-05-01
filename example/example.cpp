@@ -22,11 +22,34 @@
  *
  */
 
-#include "Packed.h"
+#include "Packer.h"
+#include "Unpacker.h"
 #include <iostream>
 
 int main()
 {
-    std::cout << "Hello!!\n";
+    uint8_t buffer[1000] = {0};
+    OkraPacked::Packer packer(buffer, sizeof(buffer));
+
+    int repeatCount =31;
+    int bits = 17;
+    uint32_t val = 0xF0F0;
+
+    // Pack a bunch of data
+    for (int i = 0; i < repeatCount; i++) {
+        packer.pack(val, bits);
+    }
+
+    OkraPacked::Unpacker unpacker(buffer, bits * repeatCount);
+
+    // unpack a bunch of data
+    for (int i = 0; i < repeatCount; i++) {
+        if (val != unpacker.unpack<uint32_t>(bits)) {
+            printf("FAILED! Corruptions in a unpacked value\n");
+            return 0;
+        }
+    }
+
+    printf("Successfully packed and unpacked a bunch of data\n");
     return 0;
 }
