@@ -1,3 +1,5 @@
+image: 
+  name: meson
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
@@ -7,7 +9,7 @@ variables:
   - merge_requests
   - tags
 
-build-prod:
+test-native:
   stage: test
   only: *only-default
   script:
