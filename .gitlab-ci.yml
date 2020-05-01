@@ -1,0 +1,17 @@
+
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+.only-default: &only-default
+  - master
+  - merge_requests
+  - tags
+
+build-prod:
+  stage: test
+  only: *only-default
+  script:
+  - meson build 
+  - cd build
+  - ninja lint
+  - ninja test
