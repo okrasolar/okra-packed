@@ -26,6 +26,7 @@
 
 #include <bitset>
 #include <cstdint>
+#include <type_traits>
 
 namespace OkraPacked
 {
@@ -40,26 +41,25 @@ namespace OkraPacked
          */
         Unpacker(const uint8_t* buffer, const uint32_t len) :
             _buffer(buffer),
-            _bytePos((len - 1)/8),
-            _bitPos((len-1) % 8) 
+            _bytePos((len - 1) / 8),
+            _bitPos((len - 1) % 8)
         {}
 
         /**
-         * @brief Unpack data from the buffer.
+         * @brief Unpack unsigned data from the buffer.
          * 
-         * @tparam T type to unpack
+         * @tparam T type to unpack. Support uint32, uint16 and uint8 atm. No signed 
          * @param bits number of bits to unpack
          * @return T unpacked value
          */
-        template<typename T>
-        T unpack(const uint8_t bits)
+        template <typename T, class = typename std::enable_if<std::is_unsigned<T>::value>::type>
+        T unpackUnsigned(const uint8_t bits)
         {
             T ret = 0;
             int8_t bitsCount = bits - 1;
             uint8_t numBytes = bits / 8;
             for (int byte = numBytes; byte > -1; byte--) {
                 do {
-                    // printf("byte: %02X\n", _buffer[_bytePos]);
                     bool binVal = (_buffer[_bytePos] & (1 << _bitPos)) > 0;
                     setBit(&ret, bitsCount, binVal);
                     if (--bitsCount < 0) {
@@ -76,12 +76,30 @@ namespace OkraPacked
             return ret;
         }
 
+        /**
+         * @brief Unpack signed data from the buffer.
+         * 
+         * @tparam T type to unpack. Support uint32, uint16 and uint8 atm. No signed 
+         * @param bits number of bits to unpack
+         * @return T unpacked value
+         */
+        template <typename T, class = typename std::enable_if<std::is_signed<T>::value>::type>
+        T unpackSigned(const uint8_t bits)
+        {
+            // All signed types have a sign bit prepended
+            auto uVal = unpackUnsigned<typename std::make_unsigned<T>::type>(bits + 1);
+            bool isNeg = uVal & (1 << bits);
+            uVal &= ~(1 << bits);   // clear signed bit
+            T ret = (T)uVal * (isNeg ? -1 : 1);
+            return ret;
+        }
+
       private:
         const uint8_t* _buffer;
         int8_t _bytePos;
         int8_t _bitPos;
 
-        template<typename T>
+        template <typename T>
         void setBit(T* var, const uint8_t bit, const bool val)
         {
             if (val) {

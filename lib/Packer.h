@@ -26,6 +26,7 @@
 
 #include <bitset>
 #include <cstdint>
+#include <type_traits>
 
 namespace OkraPacked
 {
@@ -43,14 +44,14 @@ namespace OkraPacked
             _len(len) {}
 
         /**
-         * @brief Pack data into the buffer.
+         * @brief Pack unsigned data into the buffer.
          * @todo boundry checks for packing
          * 
          * @tparam T type of data being packed
          * @param bits number of bits to pack
          */
-        template<typename T>
-        void pack(const T val, const uint8_t bits)
+        template <typename T, class = typename std::enable_if<std::is_unsigned<T>::value>::type>
+        size_t packUnsigned(const T val, const uint8_t bits)
         {
             uint8_t bitsCount = 0;
             uint8_t numBytes = bits / 8;
@@ -62,13 +63,31 @@ namespace OkraPacked
                             _bitPos = 0;
                             _bytePos++;
                         }
-                        return;
+                        return packedCount();
                     }
                 } while (++_bitPos < 8);
                 _bitPos = 0;
                 _bytePos++;
             }
-            return;
+            return packedCount();
+        }
+
+        /**
+         * @brief Pack signed data into the buffer.
+         * @todo boundry checks for packing
+         * 
+         * @tparam T type of data being packed
+         * @param bits number of bits to pack
+         */
+        template <typename T, class = typename std::enable_if<std::is_signed<T>::value>::type>
+        size_t packSigned(T val, const uint8_t bits)
+        {
+            if (val < 0) {
+                val *= -1;          // 2's compliment
+                val |= 1 << bits;   // flag the first bit
+            }
+            auto uVal = static_cast<typename std::make_unsigned<T>::type>(val);
+            return packUnsigned(uVal, bits + 1);
         }
 
       private:
@@ -77,7 +96,12 @@ namespace OkraPacked
         uint8_t _bitPos = 0;
         uint32_t _bytePos = 0;
 
-        template<typename T>
+        size_t packedCount()
+        {
+            return _bytePos * 8 + _bitPos;
+        }
+
+        template <typename T>
         void setBit(T* val, const uint8_t bit, const bool setting)
         {
             if (setting) {

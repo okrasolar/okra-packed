@@ -31,20 +31,21 @@ int main()
     uint8_t buffer[1000] = {0};
     OkraPacked::Packer packer(buffer, sizeof(buffer));
 
-    int repeatCount =31;
+    int repeatCount = 31;
     int bits = 17;
-    uint32_t val = 0xF0F0;
+    int32_t val = -15116;
+    size_t packedCount;
 
     // Pack a bunch of data
     for (int i = 0; i < repeatCount; i++) {
-        packer.pack(val, bits);
+        packedCount = packer.packSigned(val++, bits);
     }
 
-    OkraPacked::Unpacker unpacker(buffer, bits * repeatCount);
+    OkraPacked::Unpacker unpacker(buffer, packedCount);
 
     // unpack a bunch of data
     for (int i = 0; i < repeatCount; i++) {
-        if (val != unpacker.unpack<uint32_t>(bits)) {
+        if (--val != unpacker.unpackSigned<int32_t>(bits)) {
             printf("FAILED! Corruptions in a unpacked value\n");
             return 0;
         }
