@@ -1,5 +1,5 @@
 image: 
-  name: meson
+  name: registry.gitlab.com/okrasolar/firmware/okra-edamame:0.0.5
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
